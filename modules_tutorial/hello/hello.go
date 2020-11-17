@@ -16,12 +16,14 @@ func main() {
 	//seed the rand function
 	greetings.Realinit()
 
+	names := []string{"Bob", "Terry", "Barry", "Larry"}
+
     // Get a greeting message and print it.
-	message, err := greetings.Hello("Bob")
+	messages, err := greetings.Hellos(names)
 	
 	if(err != nil){
 		log.Fatal(err)
 	}
 
-    fmt.Println(message)
+    fmt.Println(messages)
 }
