@@ -13,6 +13,9 @@ func main() {
 	log.SetPrefix("Error, greetings: ")
 	log.SetFlags(0)
 
+	//seed the rand function
+	greetings.Realinit()
+
     // Get a greeting message and print it.
 	message, err := greetings.Hello("Bob")
 	
