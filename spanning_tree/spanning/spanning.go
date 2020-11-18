@@ -1,18 +1,24 @@
-import sort.Slice
+
+package spanning
+
+import (
+	"sort"
+	"container/list"
+)
 
 //Edges have a cost and 2 Vertices
-struct Edges{
+type Edge struct {
 	v1,v2 *Vertex
 	weight uint
 }
 
 //vertices have a list of edges
-struct Vertex{
+type Vertex struct {
 	neighbors []*Vertex
 }
 
 //returns true if the vertex is contained in the list
-func contains(list []*Vertex, v *Vertex) bool {
+func Contains(list []*Vertex, v *Vertex) bool {
 
 	for _, vertex := range list{
 		if vertex == v {
@@ -25,14 +31,14 @@ func contains(list []*Vertex, v *Vertex) bool {
 
 
 //returns the edges that were not used in BFS
-func notContained(list []*Edge, discovered []*Vertex) []*Edge {
+func NotDiscovered(list []*Edge, discovered []*Vertex) []*Edge {
 
 	var res []*Edge
 
 	for _, e := range list {
 
-		//if edge not used
-		if !contains(e.v1, discovered) && !contains(e.v2, discovered) {
+		//if edge not used one of its endpoints has not been discovered
+		if !Contains(discovered, e.v1) || !Contains(discovered, e.v2) {
 			res = append(res, e)
 		}
 	}
@@ -40,19 +46,17 @@ func notContained(list []*Edge, discovered []*Vertex) []*Edge {
 	return res
 }
 
-//return neighbors to a given vertex
-func getNeighbors(v *Vertex, edges []*Edge) []*Vertex {
+//return neighbors reachable with a given set of edges
+func GetNeighbors(v *Vertex, edges []*Edge) []*Vertex {
 
-	neighbors []*Vertex
+	var neighbors []*Vertex
 
 	for _, e := range edges {
+
 		if e.v1 == v {
 			neighbors = append(neighbors, e.v2)
-		}
-		else {
-			if e.v2 == v {
-				neighbors = append(neighbors, e.v1)
-			}
+		} else if e.v2 == v {	
+			neighbors = append(neighbors, e.v1)	
 		}
 	}
 
@@ -61,14 +65,18 @@ func getNeighbors(v *Vertex, edges []*Edge) []*Vertex {
 }
 
 //returns vertices corresponding to the set of edges
-func getVertices(edges []*Edge) []*Vertex {
+func GetVertices(edges []*Edge) []*Vertex {
 
 	var res []*Vertex
 
 	for _, e := range edges {
 
-		res := append(res, e.v1)
-		res := append(res, e.v2)
+		if !Contains(res, e.v1) {
+			res = append(res, e.v1)
+		}
+		if !Contains(res, e.v2) {
+			res = append(res, e.v2)
+		}
 	}
 
 	return res
@@ -76,35 +84,40 @@ func getVertices(edges []*Edge) []*Vertex {
 
 //check if there is a cycle in the list of edges
 //BFS to find cycles
-func noCycles(edges []*Edges) bool {
+func NoCycles(edges []*Edge) bool {
 
-	if len(edges) < 1{
+	if len(edges) < 2 {
 		return true
 	}
 
-	vertices := getVertices(edges)
+	vertices := GetVertices(edges)
 
 	//queue of vertices we want to run bfs from
 	queue := list.New()
 
-	discovered := []*Vertex
+	var discovered []*Vertex
 
 	//root of BFS
 	root := edges[0].v1
 	discovered = append(discovered, root)
 
+	//undiscovered edges remaining
+	var remaining []*Edge
+
 	queue.PushBack(root)
 
-	for len(queue) > 0 {
+	for queue.Len() > 0 {
 
 		//dequeue
 		v := queue.Front()
 		queue.Remove(v)
 
-		for _, v := range getNeighbors(v) {
+		remaining = NotDiscovered(edges, discovered)
+
+		for _, v := range GetNeighbors(v.Value.(*Vertex), remaining) {
 
 			//cycle found
-			if contains(discovered, v){
+			if Contains(discovered, v){
 				return false
 			}
 
@@ -118,9 +131,9 @@ func noCycles(edges []*Edges) bool {
 		//launch with remaining edges
 		if len(discovered) < len(vertices){
 
-			remaining := notContained(edges, discovered)
+			remaining = NotDiscovered(edges, discovered)
 
-			return noCycles(remaining)
+			return NoCycles(remaining)
 		}
 
 	}
@@ -130,26 +143,27 @@ func noCycles(edges []*Edges) bool {
 
 
 //Returns a MST for an undirected weighted graph
-func MinimumSpanningTree(edges []*Edges, vertices []*Vertex) ([]*Edges){
+func MinimumSpanningTree(edges []*Edge, vertices []*Vertex) ([]*Edge){
 
-	var res []*Edges
+	var res []*Edge
+	
+	order := func(i, j int) bool {
+		return edges[i].weight < edges[j].weight
+	}
 
 	//first sort the edges in increasing weight order
-	sort.Slice(edges, 
-		func(i, j int) bool {
-			edges[i].weight < edges[j].weight
-		}
-	)
+	sort.Slice(edges, order)
 
 	//since MST is a matroid, greedy finds the right solution
 	for _, e := range edges {
 
 		tmp := append(res, e)
 
-		if noCycles(tmp){
-			res := append(res, e)
+		if NoCycles(tmp){
+			res = append(res, e)
 		}
 
 	}
 
+	return res
 }
