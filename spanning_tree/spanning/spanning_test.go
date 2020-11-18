@@ -21,7 +21,7 @@ func TestPartialBFS(t *testing.T) {
 	v3.neighbors = []*Vertex{&v2, &v1}
 
 	v4.neighbors = []*Vertex{&v5}
-	v4.neighbors = []*Vertex{&v5}
+	v5.neighbors = []*Vertex{&v4}
 
 
 	var e1, e2, e3, e4 Edge
@@ -43,10 +43,17 @@ func TestPartialBFS(t *testing.T) {
 
 	//bfs discovered the isolated component but not the triangle
 
-	discovered := []*Vertex{&v4, &v5}
 	edges := []*Edge{&e1, &e2, &e3, &e4}
 
-	remaining := NotDiscovered(edges, discovered)
+	remaining := Minus(edges, []*Edge{&e4})
+
+	if !ContainsEdge(edges, &e4) {
+		t.Fatalf("ContainsEdge function not correct.")
+	}
+
+	if len(remaining) != 3 {
+		t.Fatalf("Minus function not correct. Size is %v", len(remaining))
+	}
 
 	remaining_vertices := GetVertices(remaining)
 
@@ -69,6 +76,48 @@ func TestPartialBFS(t *testing.T) {
 
 func TestMST(t *testing.T) {
 
-	
+	var (
+		v1 Vertex
+		v2 Vertex
+		v3 Vertex
+		v4 Vertex
+		v5 Vertex
+	)
 
+	// balloon graph 
+	v1.neighbors = []*Vertex{&v2, &v3, &v4}
+	v2.neighbors = []*Vertex{&v1, &v3}
+	v3.neighbors = []*Vertex{&v2, &v1}
+
+	v4.neighbors = []*Vertex{&v5, &v1}
+	v5.neighbors = []*Vertex{&v4}
+
+
+	var e1, e2, e3, e4, e5 Edge
+
+	e1.weight = 1
+	e2.weight = 1
+	e3.weight = 2
+	e4.weight = 7
+	e5.weight = 5
+
+	e1.v1 = &v1
+	e1.v2 = &v2
+	e2.v1 = &v2
+	e2.v2 = &v3
+	e3.v1 = &v3
+	e3.v2 = &v1
+
+	e4.v1 = &v4
+	e4.v2 = &v5
+
+	e5.v1 = &v4
+	e5.v2 = &v1
+
+	res := MinimumSpanningTree([]*Edge{&e1, &e2, &e3, &e4, &e5}, []*Vertex{&v1, &v2, &v3, &v4, &v5})
+
+	if len(res) != 4 || !NoCycles(res) || ContainsEdge(res, &e3){
+		t.Fatalf("MinimumSpanningTree function not correct")
+	}
 }
+

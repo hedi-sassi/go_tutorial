@@ -29,22 +29,18 @@ func Contains(list []*Vertex, v *Vertex) bool {
 	return false
 }
 
+// check if edge is in the slice
+func ContainsEdge(edges []*Edge, e *Edge) bool {
 
-//returns the edges that were not used in BFS
-func NotDiscovered(list []*Edge, discovered []*Vertex) []*Edge {
-
-	var res []*Edge
-
-	for _, e := range list {
-
-		//if edge not used one of its endpoints has not been discovered
-		if !Contains(discovered, e.v1) || !Contains(discovered, e.v2) {
-			res = append(res, e)
+	for _, edge := range edges {
+		if e == edge {
+			return true
 		}
 	}
 
-	return res
+	return false
 }
+
 
 //return neighbors reachable with a given set of edges
 func GetNeighbors(v *Vertex, edges []*Edge) []*Vertex {
@@ -82,6 +78,33 @@ func GetVertices(edges []*Edge) []*Vertex {
 	return res
 }
 
+//returns the edge between the 2 vertices
+func GetEdgeFromVertices(v1 *Vertex, v2 *Vertex, list []*Edge) *Edge {
+
+	for _, e := range list {
+		if (e.v1 == v1 && e.v2 == v2) || (e.v1 == v2 && e.v2 == v1) {
+			return e
+		}
+	}
+	
+	return nil
+}
+
+//substract element from l1 that are in l2
+func Minus(l1 []*Edge, l2 []*Edge) []*Edge {
+
+	var res []*Edge
+
+	for _,e := range l1 {
+
+		if !ContainsEdge(l2, e) {
+			res = append(res, e)
+		}
+	}
+
+	return res
+}
+
 //check if there is a cycle in the list of edges
 //BFS to find cycles
 func NoCycles(edges []*Edge) bool {
@@ -96,13 +119,11 @@ func NoCycles(edges []*Edge) bool {
 	queue := list.New()
 
 	var discovered []*Vertex
+	var discovered_edges []*Edge
 
 	//root of BFS
 	root := edges[0].v1
 	discovered = append(discovered, root)
-
-	//undiscovered edges remaining
-	var remaining []*Edge
 
 	queue.PushBack(root)
 
@@ -112,18 +133,24 @@ func NoCycles(edges []*Edge) bool {
 		v := queue.Front()
 		queue.Remove(v)
 
-		remaining = NotDiscovered(edges, discovered)
+		remaining := Minus(edges, discovered_edges)
 
-		for _, v := range GetNeighbors(v.Value.(*Vertex), remaining) {
+		for _, vertex := range GetNeighbors(v.Value.(*Vertex), remaining) {
 
 			//cycle found
-			if Contains(discovered, v){
+			if Contains(discovered, vertex){
 				return false
 			}
 
 			//mark as discovered and enqueue
-			queue.PushBack(v)
-			discovered = append(discovered, root)
+			queue.PushBack(vertex)
+			discovered = append(discovered, vertex)
+			new_edge := GetEdgeFromVertices(vertex, v.Value.(*Vertex), edges)
+
+			if new_edge != nil {
+				discovered_edges = append(discovered_edges, new_edge)
+			}
+			
 
 		}
 
@@ -131,7 +158,7 @@ func NoCycles(edges []*Edge) bool {
 		//launch with remaining edges
 		if len(discovered) < len(vertices){
 
-			remaining = NotDiscovered(edges, discovered)
+			remaining := Minus(edges, discovered_edges)
 
 			return NoCycles(remaining)
 		}
